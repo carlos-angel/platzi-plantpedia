@@ -1,6 +1,6 @@
 import { GetStaticProps, InferGetStaticPropsType, GetStaticPaths } from 'next'
 import Link from 'next/link'
-
+import { flatMap } from 'lodash'
 import { getPlant, getPlantList, getCategoryList } from '@api'
 
 import { Layout } from '@components/Layout'
@@ -21,6 +21,7 @@ type PlantEntryPageProps = {
 export const getStaticProps: GetStaticProps<PlantEntryPageProps> = async ({
   params,
   preview,
+  locale,
 }) => {
   const slug = params?.slug
 
@@ -31,7 +32,7 @@ export const getStaticProps: GetStaticProps<PlantEntryPageProps> = async ({
   }
 
   try {
-    const plant = await getPlant(slug, preview)
+    const plant = await getPlant(slug, preview, locale)
 
     // Sidebar – This could be a single request since we are using GraphQL :)
     const otherEntries = await getPlantList({
@@ -58,18 +59,27 @@ type PathType = {
   params: {
     slug: string
   }
+  locale: string
 }
 
-export const getStaticPaths: GetStaticPaths = async () => {
+export const getStaticPaths: GetStaticPaths = async ({ locales }) => {
+  if (locales === undefined) {
+    throw new Error(
+      'Uh, did you forget to configure locales in your Nextjs config'
+    )
+  }
   // Match home query.
   // @TODO how do we generate all of our pages if we don't know the number? 🤔
   const plantEntriesToGenerate = await getPlantList({ limit: 10 })
 
-  const paths: PathType[] = plantEntriesToGenerate.map(({ slug }) => ({
-    params: {
-      slug,
-    },
-  }))
+  const paths: PathType[] = flatMap(
+    plantEntriesToGenerate.map(({ slug }) => ({
+      params: {
+        slug,
+      },
+    })),
+    (path) => locales.map((locale) => ({ locale, ...path }))
+  )
 
   return {
     paths,
@@ -133,7 +143,7 @@ export default function PlantEntryPage({
           </section>
         </Grid>
       </Grid>
-      <section className="my-4 border-t-2 border-b-2 border-gray-200 pt-12 pb-7">
+      <section className="pt-12 my-4 border-t-2 border-b-2 border-gray-200 pb-7">
         <AuthorCard {...plant.author} />
       </section>
     </Layout>
