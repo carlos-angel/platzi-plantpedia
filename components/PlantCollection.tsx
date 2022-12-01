@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import Link from 'next/link'
 import { Grid, GridProps } from '@ui/Grid'
 import { Typography } from '@ui/Typography'
@@ -20,7 +21,7 @@ export function PlantCollection({
   return (
     <Grid container component="ul" spacing={4} className={className}>
       {plants.map((plant) => (
-        <PlantEntry key={plant.id} plant={plant} variant={variant} />
+        <MemoizedPlanEntry key={plant.id} plant={plant} variant={variant} />
       ))}
     </Grid>
   )
@@ -30,6 +31,13 @@ type PlantEntryType = {
   plant: Plant
   variant?: 'square' | 'vertical'
 }
+
+const isEqual = (previousProps: PlantEntryType, newProps: PlantEntryType) => {
+  const hasChanged = previousProps.plant.plantName === newProps.plant.plantName
+  return hasChanged
+}
+
+export const MemoizedPlanEntry = memo(PlantEntry, isEqual)
 
 export function PlantEntry({ plant, variant = 'square' }: PlantEntryType) {
   let gridItemProps: GridProps = { xs: 6, md: 4 }
@@ -92,7 +100,7 @@ export function PlantEntryInline({
             fit="fill"
             className="flex-none"
           />
-          <div className="pl-2 flex-auto">
+          <div className="flex-auto pl-2">
             <Typography variant="h6" className="break-words">
               {plantName}
             </Typography>
@@ -119,7 +127,7 @@ export function PlantEntryVertical({
             layout="intrinsic"
             aspectRatio="9:12"
           />
-          <Typography variant="h2" className="break-words pt-4 px-4">
+          <Typography variant="h2" className="px-4 pt-4 break-words">
             {plantName}
           </Typography>
         </a>
